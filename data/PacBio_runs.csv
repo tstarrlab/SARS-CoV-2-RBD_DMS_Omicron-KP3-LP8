@@ -1,0 +1,5 @@
+library,bg,run,ccs
+pool1,LP8,250702,/uufs/chpc.utah.edu/common/home/u6012917/starr-group1/sequencing/TNS/2025/250702_PacBio_SARS2-kp3-lp8/Lib133.r841071604351_A01.hifireads.fastq.gz
+pool2,LP8,250702,/uufs/chpc.utah.edu/common/home/u6012917/starr-group1/sequencing/TNS/2025/250702_PacBio_SARS2-kp3-lp8/Lib134.r841071604351_A01.hifireads.fastq.gz
+pool1,KP3,250702,/uufs/chpc.utah.edu/common/home/u6012917/starr-group1/sequencing/TNS/2025/250702_PacBio_SARS2-kp3-lp8/Lib135.r841071604351_A01.hifireads.fastq.gz
+pool2,KP3,250702,/uufs/chpc.utah.edu/common/home/u6012917/starr-group1/sequencing/TNS/2025/250702_PacBio_SARS2-kp3-lp8/Lib136.r841071604351_A01.hifireads.fastq.gz
