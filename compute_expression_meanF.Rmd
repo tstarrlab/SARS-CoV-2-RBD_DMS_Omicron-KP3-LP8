@@ -50,18 +50,17 @@ barcode_runs <- read.csv(file=config$barcode_runs,stringsAsFactors=F); barcode_r
 barcode_runs <- barcode_runs[barcode_runs$sample_type == "SortSeq",]
 
 #read file giving count of each barcode in each sort partition
-counts <- data.table(read.csv(file=config$variant_counts_file,stringsAsFactors=F))
+counts <- data.table(fread(config$variant_counts_file,stringsAsFactors=F))
 
 #eliminate rows from counts that are not part of an expression sort-seq bin
 counts <- subset(counts, sample %in% barcode_runs[barcode_runs$sample_type=="SortSeq","sample"])
 
 #read in barcode-variant lookup tables
-dt_EG5 <- data.table(read.csv(file=config$codon_variant_table_file_EG5,stringsAsFactors=F))
-dt_FLip <- data.table(read.csv(file=config$codon_variant_table_file_FLip,stringsAsFactors=F))
-dt_BA286 <- data.table(read.csv(file=config$codon_variant_table_file_BA286,stringsAsFactors=F))
+dt_KP3 <- data.table(read.csv(file=config$codon_variant_table_file_KP3,stringsAsFactors=F))
+dt_LP8 <- data.table(read.csv(file=config$codon_variant_table_file_LP8,stringsAsFactors=F))
 
 #merge, eliminate barcodes duplicated within a library
-dt <- rbind(dt_EG5,dt_FLip,dt_BA286); setkey(dt,barcode,library)
+dt <- rbind(dt_KP3,dt_LP8); setkey(dt,barcode,library)
 duplicates <- dt[duplicated(dt,by=c("barcode","library")),.(library,barcode)] #the data.table duplciates function annoyingly only flags the first of each duplicate so doesn't intrinsically allow removal of both of the entries of the duplicate. So, flat what are duplciates, and then remove
 dt[,duplicate:=FALSE]
 for(i in 1:nrow(duplicates)){
@@ -69,7 +68,7 @@ for(i in 1:nrow(duplicates)){
 }
 dt <- dt[duplicate==FALSE,]; dt[,duplicate:=NULL]
 
-dt <- merge(counts, dt, by=c("library","barcode")); rm(dt_EG5);rm(dt_FLip);rm(dt_BA286);rm(counts); rm(duplicates)
+dt <- merge(counts, dt, by=c("library","barcode")); rm(dt_KP3);rm(dt_LP8);rm(counts); rm(duplicates)
 
 ```
  Convert from Illumina read counts to estimates of the number of cells that were sorted into a bin, and add some other useful information to our data frame.
@@ -125,13 +124,13 @@ calc.MLmean <- function(b1,b2,b3,b4,min.b1,min.b2,min.b3,min.b4,max.b4,min.count
 #fit ML mean and sd fluorescence for each barcode, and calculate total cell count as the sum across the four bins. Multiply cell counts by a factor of 20 to minimize rounding errors since fitdistcens requires rounding to integer inputs
 invisible(dt[library=="pool1",c("expression","ML_sdF") := tryCatch(calc.MLmean(b1=SortSeq_bin1*20,b2=SortSeq_bin2*20,
                                                                       b3=SortSeq_bin3*20,b4=SortSeq_bin4*20,
-                                                                      min.b1=log(20),min.b2=log(221),min.b3=log(876.5),
-                                                                      min.b4=log(2834.5),max.b4=log(229000)),
+                                                                      min.b1=log(20),min.b2=log(440),min.b3=log(1185),
+                                                                      min.b4=log(2687),max.b4=log(229000)),
                                                           error=function(e){return(list(as.numeric(NA),as.numeric(NA)))}),by=c("library","barcode")])
 invisible(dt[library=="pool2",c("expression","ML_sdF") := tryCatch(calc.MLmean(b1=SortSeq_bin1*20,b2=SortSeq_bin2*20,
                                                                       b3=SortSeq_bin3*20,b4=SortSeq_bin4*20,
-                                                                      min.b1=log(20),min.b2=log(221),min.b3=log(876.5),
-                                                                      min.b4=log(2834.5),max.b4=log(229000)),
+                                                                      min.b1=log(20),min.b2=log(440),min.b3=log(1185),
+                                                                      min.b4=log(2687),max.b4=log(229000)),
                                                           error=function(e){return(list(as.numeric(NA),as.numeric(NA)))}),by=c("library","barcode")])
 
 #save temp data file for downstream troubleshooting since the ML meanF took >1hr to calculate -- don't use these for final anlaysis though for reproducibility!

@@ -51,18 +51,17 @@ barcode_runs <- read.csv(file=config$barcode_runs,stringsAsFactors=F); barcode_r
 barcode_runs <- barcode_runs[barcode_runs$sample_type == "TiteSeq",]
 
 #read file giving count of each barcode in each sort partition
-counts <- data.table(read.csv(file=config$variant_counts_file,stringsAsFactors=F))
+counts <- data.table(fread(config$variant_counts_file,stringsAsFactors=F))
 
 #eliminate rows from counts that are not part of an titration bin sample
 counts <- subset(counts, sample %in% barcode_runs[barcode_runs$sample_type=="TiteSeq","sample"])
 
 #read in barcode-variant lookup tables
-dt_EG5 <- data.table(read.csv(file=config$codon_variant_table_file_EG5,stringsAsFactors=F))
-dt_FLip <- data.table(read.csv(file=config$codon_variant_table_file_FLip,stringsAsFactors=F))
-dt_BA286 <- data.table(read.csv(file=config$codon_variant_table_file_BA286,stringsAsFactors=F))
+dt_KP3 <- data.table(read.csv(file=config$codon_variant_table_file_KP3,stringsAsFactors=F))
+dt_LP8 <- data.table(read.csv(file=config$codon_variant_table_file_LP8,stringsAsFactors=F))
 
 #merge, eliminate barcodes duplicated within a library
-dt <- rbind(dt_EG5,dt_FLip,dt_BA286); setkey(dt,barcode,library)
+dt <- rbind(dt_KP3,dt_LP8); setkey(dt,barcode,library)
 duplicates <- dt[duplicated(dt,by=c("barcode","library")),.(library,barcode)] #the data.table duplciates function annoyingly only flags the first of each duplicate so doesn't intrinsically allow removal of both of the entries of the duplicate. So, flat what are duplciates, and then remove
 dt[,duplicate:=FALSE]
 for(i in 1:nrow(duplicates)){
@@ -70,7 +69,7 @@ for(i in 1:nrow(duplicates)){
 }
 dt <- dt[duplicate==FALSE,]; dt[,duplicate:=NULL]
 
-dt <- merge(counts, dt, by=c("library","barcode")); rm(dt_EG5);rm(dt_FLip);rm(dt_BA286);rm(counts); rm(duplicates)
+dt <- merge(counts, dt, by=c("library","barcode")); rm(dt_KP3);rm(dt_LP8);rm(counts); rm(duplicates)
 
 #make tables giving names of Titeseq samples and the corresponding ACE2 incubation concentrations
 samples_TiteSeq <- data.frame(sample=unique(paste(barcode_runs[barcode_runs$sample_type=="TiteSeq","sample_type"],formatC(barcode_runs[barcode_runs$sample_type=="TiteSeq","concentration"], width=2,flag="0"),sep="_")),conc=c(10^-6, 10^-7, 10^-8, 10^-9, 10^-10, 10^-11, 10^-12, 10^-13,0))
@@ -266,12 +265,10 @@ Distribution of Kd estimates, with wt/syn barcodes in purple:
 
 ```{r Kd_distribution, fig.width=5, fig.height=9, fig.align="center",dpi=300,dev="png"}
 par(mfrow=c(3,1))
-hist(log10(dt[target=="EG5",Kd_ACE2]),col="gray40",breaks=60,xlab="log10(KD), ACE2 (M)",main="EG5",xlim=c(-13,-5))
-hist(log10(dt[target=="EG5" & variant_class %in% (c("synonymous","wildtype")),Kd_ACE2]),col="#92278F",add=T,breaks=60)
-hist(log10(dt[target=="FLip",Kd_ACE2]),col="gray40",breaks=60,xlab="log10(KD), ACE2 (M)",main="FLip",xlim=c(-13,-5))
-hist(log10(dt[target=="FLip" & variant_class %in% (c("synonymous","wildtype")),Kd_ACE2]),col="#92278F",add=T,breaks=60)
-hist(log10(dt[target=="BA286",Kd_ACE2]),col="gray40",breaks=60,xlab="log10(KD), ACE2 (M)",main="BA286",xlim=c(-13,-5))
-hist(log10(dt[target=="BA286" & variant_class %in% (c("synonymous","wildtype")),Kd_ACE2]),col="#92278F",add=T,breaks=60)
+hist(log10(dt[target=="KP3",Kd_ACE2]),col="gray40",breaks=60,xlab="log10(KD), ACE2 (M)",main="KP3",xlim=c(-13,-5))
+hist(log10(dt[target=="KP3" & variant_class %in% (c("synonymous","wildtype")),Kd_ACE2]),col="#92278F",add=T,breaks=60)
+hist(log10(dt[target=="LP8",Kd_ACE2]),col="gray40",breaks=60,xlab="log10(KD), ACE2 (M)",main="LP8",xlim=c(-13,-5))
+hist(log10(dt[target=="LP8" & variant_class %in% (c("synonymous","wildtype")),Kd_ACE2]),col="#92278F",add=T,breaks=60)
 #save pdf
 invisible(dev.print(pdf, paste(config$Titeseq_Kds_dir,"/hist_Kd-per-barcode.pdf",sep="")))
 ```
@@ -344,15 +341,7 @@ plot.titration(which(dt$library=="pool2" & dt$Kd_ACE2 > 1e-10 & dt$Kd_ACE2 < 1.2
 plot.titration(which(dt$library=="pool2" & dt$Kd_ACE2 > 1e-10 & dt$Kd_ACE2 < 1.2e-10)[2])
 ```
 
-*K*<sub>D,app</sub> ~ 10<sup>-11</sup>. This is higher affinity than the main bulk of curves.
 
-```{r 1e-11_Kd, fig.width=8, fig.height=8, fig.align="center",dpi=300, warning=FALSE, results=FALSE,dev="png"}
-par(mfrow=c(2,2))
-plot.titration(which(dt$library=="pool1" & dt$Kd_ACE2 > 1e-11 & dt$Kd_ACE2 < 2e-11)[1])
-plot.titration(which(dt$library=="pool1" & dt$Kd_ACE2 > 1e-11 & dt$Kd_ACE2 < 2e-11)[2])
-plot.titration(which(dt$library=="pool2" & dt$Kd_ACE2 > 1e-11 & dt$Kd_ACE2 < 2e-11)[1])
-plot.titration(which(dt$library=="pool2" & dt$Kd_ACE2 > 1e-11 & dt$Kd_ACE2 < 2e-11)[2])
-```
 
 ## Data filtering by fit quality
 
@@ -365,7 +354,7 @@ Look at nMSR metric versus avgcoutn value, and layer on value of nMSR filtering 
 median.nMSR <- median(dt$nMSR_ACE2,na.rm=T)
 threshold <- 20
 par(mfrow=c(2,2))
-for(bg in c("EG5","FLip","BA286")){
+for(bg in c("KP3","LP8")){
   plot(log10(dt[target==bg,TiteSeq_avgcount]),dt[target==bg,nMSR_ACE2],main=bg,pch=19,col="#00000010",xlab="average cell count (log10)",ylab="nMSR",xlim=c(0,6),ylim=c(0,0.5))
   abline(h=threshold*median.nMSR,col="red",lty=2)
   legend("topleft",bty="n",cex=1,legend=paste(format(100*nrow(dt[target==bg & nMSR_ACE2 > threshold*median.nMSR & !is.na(nMSR_ACE2),])/nrow(dt[target==bg & !is.na(nMSR_ACE2),]),digits=3),"%"))
@@ -387,7 +376,7 @@ Let's visualize the final binding measurements as violin plots for the different
 p1 <- ggplot(dt[!is.na(log10Ka),],aes(x=variant_class,y=log10Ka))+
   geom_violin(scale="width")+stat_summary(fun=median,geom="point",size=1)+
   ggtitle("huACE2, log10(Ka)")+xlab("variant class")+theme(axis.text.x=element_text(angle=-90,hjust=0))+
-  facet_wrap(~target,nrow=4)
+  facet_wrap(~target+library,nrow=4)
 
 grid.arrange(p1,ncol=1)
 

@@ -80,6 +80,18 @@ for(bg in unique(dt_SARSr$target)){
   }
 }
 
+#add any sites missing in dt
+for(bg in unique(dt$target)){
+  for(site in 331:531){
+    if(!(site %in% dt[target==bg,position])){
+      for(AA in c("A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y","-")){
+        dt <- rbind(dt, data.frame(target=bg, wildtype="-",position=site,mutant=AA,mutation=paste("-",site,AA,sep=""),n_bc_bind=0,n_libs_bind=0,n_bc_expr=0,n_libs_expr=0),fill=T)
+      }
+    }
+  }
+}
+
+
 #add the deletion character for the earlier libraries when I didn't do indel
 for(bg in unique(dt_SARSr$target)){
   for(pos in unique(dt_SARSr$position)){
@@ -132,7 +144,7 @@ JS <- function(vec1,vec2){
 #first, for bind measurements
 #data table for storing difference in correlation in profiles between bg pairs at each site
 #generate table with all combinations of bg_1 and bg_2 for each site
-diffs_bind <- data.table(expand.grid(site=unique(dt$position),bg_2=c("Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani"),bg_1=c("Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani")))
+diffs_bind <- data.table(expand.grid(site=unique(dt$position),bg_2=c("Omicron_LP8","Omicron_KP3","Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani"),bg_1=c("Omicron_LP8","Omicron_KP3","Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani")))
 
 #remove duplicates where bg_1 and _2 the same
 diffs_bind <- diffs_bind[bg_1 != bg_2,]
@@ -152,7 +164,7 @@ for(i in 1:nrow(diffs_bind)){
 #repeat for expr measurements
 #data table for storign difference in correlation in profiles between bg pairs at each site
 #generate table with all combinations of bg_1 and bg_2 for each site
-diffs_expr <- data.table(expand.grid(site=unique(dt$position),bg_2=c("Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani"),bg_1=c("Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani")))
+diffs_expr <- data.table(expand.grid(site=unique(dt$position),bg_2=c("Omicron_LP8","Omicron_KP3","Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani"),bg_1=c("Omicron_LP8","Omicron_KP3","Omicron_BA286","Omicron_EG5","Omicron_FLip","Omicron_XBB15","Omicron_BQ11","Omicron_BA2","Omicron_BA1","Delta","Eta","Beta","Alpha","Wuhan-Hu-1","SARS-CoV-2_WH1","SARS-CoV-1_Urbani")))
 
 
 #remove duplicates where either bg_1 and _2 the same
@@ -221,71 +233,44 @@ plot_scatter <- function(site, bg1, bg2, JSD=F, JSD_min3bc=T, JSD_min5bc=F,n_bc_
 
 ```
 
-```{r scatters_EG5-FLip_diffs_v_BA2, echo=T, fig.width=9, fig.height=9, fig.align="center", dpi=300,dev="png"}
-par(mfrow=c(3,3))
-plot_scatter(site=453,"Omicron_BA2","Omicron_EG5")
-plot_scatter(site=455,"Omicron_BA2","Omicron_EG5")
-plot(0,type='n',axes=FALSE,ann=F)
-plot_scatter(site=449,"Omicron_BA2","Omicron_FLip")
-plot_scatter(site=453,"Omicron_BA2","Omicron_FLip")
-plot_scatter(site=455,"Omicron_BA2","Omicron_FLip")
-plot_scatter(site=456,"Omicron_BA2","Omicron_FLip")
-plot_scatter(site=496,"Omicron_BA2","Omicron_FLip")
-plot(0,type='n',axes=FALSE,ann=F)
+Shifts in BA.2.86 relative to KP3
 
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_Omicron-EG5-and-FLip-v-BA2_shifts.pdf",sep=""),useDingbats=F))
-```
-```{r scatters_EG5-FLip_diffs_v_XBB15, echo=T, fig.width=9, fig.height=9, fig.align="center", dpi=300,dev="png"}
-par(mfrow=c(3,3))
-plot_scatter(site=453,"Omicron_XBB15","Omicron_EG5")
-plot_scatter(site=455,"Omicron_XBB15","Omicron_EG5")
-plot(0,type='n',axes=FALSE,ann=F)
-plot_scatter(site=449,"Omicron_XBB15","Omicron_FLip")
-plot_scatter(site=453,"Omicron_XBB15","Omicron_FLip")
-plot_scatter(site=455,"Omicron_XBB15","Omicron_FLip")
-plot_scatter(site=456,"Omicron_XBB15","Omicron_FLip")
-plot_scatter(site=496,"Omicron_XBB15","Omicron_FLip")
-plot(0,type='n',axes=FALSE,ann=F)
-
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_Omicron-EG5-and-FLip-v-XBB15_shifts.pdf",sep=""),useDingbats=F))
-```
-
-```{r scatters_EG5-v-FLip_diffs, echo=T, fig.width=12, fig.height=9, fig.align="center", dpi=300,dev="png"}
-par(mfrow=c(3,4))
-plot_scatter(site=408,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=417,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=449,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=453,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=455,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=456,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=475,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=487,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=489,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=492,"Omicron_EG5","Omicron_FLip")
-plot_scatter(site=493,"Omicron_EG5","Omicron_FLip")
-
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_Omicron_EG5-v-FLip_shifts.pdf",sep=""),useDingbats=F))
-```
-Shifts in BA.2.86 relative to BA.2
-
-```{r scatters_BA286_v_BA2, echo=T, fig.width=9, fig.height=12, fig.align="center", dpi=300,dev="png"}
+```{r scatters_BA286_v_KP3, echo=T, fig.width=9, fig.height=12, fig.align="center", dpi=300,dev="png"}
 par(mfrow=c(4,3))
-plot_scatter(site=398,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=406,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=420,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=453,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=455,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=456,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=467,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=487,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=491,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=492,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=493,"Omicron_BA2","Omicron_BA286")
-plot_scatter(site=495,"Omicron_BA2","Omicron_BA286")
+plot_scatter(site=398,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=406,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=420,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=453,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=455,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=456,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=467,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=487,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=491,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=492,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=493,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=495,"Omicron_KP3","Omicron_BA286")
 
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_BA286_v_BA2_shifts.pdf",sep=""),useDingbats=F))
+invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_BA286_v_KP3_shifts.pdf",sep=""),useDingbats=F))
 ```
 
+
+```{r scatters_BA286_v_LP8, echo=T, fig.width=9, fig.height=12, fig.align="center", dpi=300,dev="png"}
+par(mfrow=c(4,3))
+plot_scatter(site=398,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=406,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=420,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=453,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=455,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=456,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=467,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=487,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=491,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=492,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=493,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=495,"Omicron_LP8","Omicron_BA286")
+
+invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_BA286_v_LP8_shifts.pdf",sep=""),useDingbats=F))
+```
 
 ## Line plots of JS divergence from WH1 across RBD sites
 
@@ -314,22 +299,22 @@ label_df <- data.frame(xmin=sig_mAb_sites-0.5,
 
 
 Lineplots, require minimum 3 bc for a measurement
-```{r line_plots_JSD_v_BA2_min3bc_setup, echo=T, fig.width=12, fig.height=4, fig.align="center", dpi=300,dev="png"}
+```{r line_plots_JSD_v_BA286_min3bc_setup, echo=T, fig.width=12, fig.height=4, fig.align="center", dpi=300,dev="png"}
 #define focal bg for others to compare to
-bg <- "Omicron_BA2"
+bg <- "Omicron_BA286"
 temp <- diffs_bind[bg_1==bg,]
 temp$target <- as.character(temp$bg_2)
 
 #define colors for each bg
-group.colors <- c("Wuhan-Hu-1" = cbPalette[1], "Omicron_BA1" = cbPalette[2], "Omicron_BA2" = cbPalette[8], "Alpha" = cbPalette[3], "Beta" = cbPalette[6], "Delta" = cbPalette[5], "Eta" = cbPalette[5], "Omicron_BQ11" = cbPalette[4], "Omicron_XBB15" = cbPalette[7], "SARS-CoV-1_Urbani" = "black", "SARS-CoV-2_WH1" = "black","Omicron_BA286" = cbPalette[8], "Omicron_EG5" = cbPalette[7], "Omicron_FLip" = cbPalette[7])
+group.colors <- c("Wuhan-Hu-1" = cbPalette[1], "Omicron_BA1" = cbPalette[2], "Omicron_BA2" = cbPalette[8], "Alpha" = cbPalette[3], "Beta" = cbPalette[6], "Delta" = cbPalette[5], "Eta" = cbPalette[5], "Omicron_BQ11" = cbPalette[4], "Omicron_XBB15" = cbPalette[7], "SARS-CoV-1_Urbani" = "black", "SARS-CoV-2_WH1" = "black","Omicron_BA286" = cbPalette[8], "Omicron_EG5" = cbPalette[7], "Omicron_FLip" = cbPalette[7], "Omicron_KP3" = cbPalette[3], "Omicron_LP8" = cbPalette[6])
 
 #define order for plotting of bgs
-temp$target <- factor(temp$target,levels=c("Wuhan-Hu-1","Alpha","Beta","Eta","Delta","Omicron_BA1","Omicron_BQ11","Omicron_XBB15","Omicron_EG5","Omicron_FLip","Omicron_BA286","SARS-CoV-1_Urbani","SARS-CoV-2_WH1"))
+temp$target <- factor(temp$target,levels=c("Wuhan-Hu-1","Alpha","Beta","Eta","Delta","Omicron_BA1","Omicron_BQ11","Omicron_XBB15","Omicron_EG5","Omicron_FLip","Omicron_BA286", "Omicron_KP3", "Omicron_LP8","SARS-CoV-1_Urbani","SARS-CoV-2_WH1"))
 
 ```
 
 Lineplots faceted
-```{r line_plots_JSD_v_BA2_min3bc_facet, echo=T, fig.width=12, fig.height=21, fig.align="center", dpi=300,dev="png"}
+```{r line_plots_JSD_v_BA286_min3bc_facet, echo=T, fig.width=12, fig.height=28, fig.align="center", dpi=300,dev="png"}
 ggplot(data=temp, aes(x=site, y=JSD_min3bc, color=target))+
   geom_rect(data=label_df, aes(x=NULL, y=NULL, color=NULL,xmin=xmin, xmax=xmax, ymin=0,ymax=1.1*max(temp$JSD,na.rm=T)), alpha=0.2)+
   geom_line(size=1)+
@@ -337,85 +322,33 @@ ggplot(data=temp, aes(x=site, y=JSD_min3bc, color=target))+
   theme_classic()+
   scale_x_continuous(expand=c(0.01,0.01),breaks=c(331,seq(335,530,by=5)))+
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10))+
-  ylab("epistatic shift (JS divergence) versus Omicron BA.2")+
+  ylab("epistatic shift (JS divergence) versus Omicron BA.2.86")+
   geom_text_repel(aes(label=ifelse(((JSD_min3bc > 0.1)),as.character(site),'')),size=3,color="gray40")+
   facet_wrap(~bg_2,ncol=1)
   
 
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/JSD_v_BA2_min3bc_faceted.pdf",sep=""),useDingbats=F))
+invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/JSD_v_BA286_min3bc_faceted.pdf",sep=""),useDingbats=F))
 ```
 
-Without EG.5 and FLip for now
-```{r line_plots_JSD_v_BA2_min3bc_facet_noEG5FLIP, echo=T, fig.width=12, fig.height=21, fig.align="center", dpi=300,dev="png"}
-ggplot(data=temp[!(target %in% c("Omicron_FLip","Omicron_EG5"))], aes(x=site, y=JSD_min3bc, color=target))+
-  geom_rect(data=label_df, aes(x=NULL, y=NULL, color=NULL,xmin=xmin, xmax=xmax, ymin=0,ymax=1.1*max(temp[!(target %in% c("Omicron_FLip","Omicron_EG5")),JSD_min3bc],na.rm=T)), alpha=0.2)+
-  geom_line(size=1)+
-  scale_color_manual(values=group.colors)+
-  theme_classic()+
-  scale_x_continuous(expand=c(0.01,0.01),breaks=c(331,seq(335,530,by=5)))+
-  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10))+
-  ylab("epistatic shift (JS divergence) versus Omicron BA.2")+
-  geom_text_repel(aes(label=ifelse(((JSD_min3bc > 0.15)),as.character(site),'')),size=3,color="gray40")+
-  facet_wrap(~bg_2,ncol=1)
-  
+Include just WH1, KP3, and LP8
 
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/JSD_v_BA2_min3bc_faceted.pdf",sep=""),useDingbats=F))
-```
+```{r line_plots_JSD_v_BA286_Omi-reduced_min3bc_facet, echo=T, fig.width=12, fig.height=10, fig.align="center", dpi=300,dev="png"}
 
-Include just WH1, BQ11, XBB15, BA286
-
-
-faceted
-```{r line_plots_JSD_v_BA2_Omi-reduced_min3bc_facet, echo=T, fig.width=12, fig.height=10, fig.align="center", dpi=300,dev="png"}
-
-ggplot(data=temp[bg_2 %in% c("Omicron_XBB15","Omicron_BQ11","Wuhan-Hu-1","Omicron_BA286")], aes(x=site, y=JSD_min3bc, color=target))+
+ggplot(data=temp[bg_2 %in% c("Wuhan-Hu-1","Omicron_KP3", "Omicron_LP8")], aes(x=site, y=JSD_min3bc, color=target))+
   geom_rect(data=label_df, aes(x=NULL, y=NULL, color=NULL,xmin=xmin, xmax=xmax, ymin=0,ymax=0.4), alpha=0.2)+
   geom_line(size=1)+
   scale_color_manual(values=group.colors)+
   theme_classic()+
   scale_x_continuous(expand=c(0.01,0.01),breaks=c(331,seq(335,530,by=5)))+
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10))+
-  ylab("epistatic shift (JS divergence) versus Omicron BA.2")+
+  ylab("epistatic shift (JS divergence) versus Omicron BA.2.86")+
   geom_text_repel(aes(label=ifelse(((JSD_min3bc > 0.1)),as.character(site),'')),size=3,color="gray40")+
   facet_wrap(~bg_2,ncol=1)
 
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/JSD_v_BA2_min3bc_Omi-reduced.pdf",sep=""),useDingbats=F))
+invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/JSD_v_BA286_min3bc_Omi-reduced.pdf",sep=""),useDingbats=F))
 
 ```
 
-For future interest, JSD versus EG5 for FLip data:
-
-Lineplots, require minimum 3 bc for a measurement
-```{r line_plots_JSD_v_EG5_min3bc_setup, echo=T, fig.width=12, fig.height=4, fig.align="center", dpi=300,dev="png"}
-#define focal bg for others to compare to
-bg <- "Omicron_EG5"
-temp2 <- diffs_bind[bg_1==bg,]
-temp2$target <- as.character(temp2$bg_2)
-
-#define colors for each bg
-group.colors <- c("Wuhan-Hu-1" = cbPalette[1], "Omicron_BA1" = cbPalette[2], "Omicron_BA2" = cbPalette[8], "Alpha" = cbPalette[3], "Beta" = cbPalette[6], "Delta" = cbPalette[5], "Eta" = cbPalette[5], "Omicron_BQ11" = cbPalette[4], "Omicron_XBB15" = cbPalette[7], "SARS-CoV-1_Urbani" = "black", "SARS-CoV-2_WH1" = "black","Omicron_BA286" = cbPalette[8], "Omicron_EG5" = cbPalette[7], "Omicron_FLip" = cbPalette[7])
-
-#define order for plotting of bgs
-temp2$target <- factor(temp2$target,levels=c("Wuhan-Hu-1","Alpha","Beta","Eta","Delta","Omicron_BA1","Omicron_BA2","Omicron_BQ11","Omicron_XBB15","Omicron_EG5","Omicron_FLip","Omicron_BA286","SARS-CoV-1_Urbani","SARS-CoV-2_WH1"))
-
-```
-
-Lineplots faceted
-```{r line_plots_JSD_v_EG5_min3bc_facet, echo=T, fig.width=12, fig.height=3, fig.align="center", dpi=300,dev="png"}
-ggplot(data=temp[target=="Omicron_FLip"], aes(x=site, y=JSD_min3bc, color=target))+
-  geom_rect(data=label_df, aes(x=NULL, y=NULL, color=NULL,xmin=xmin, xmax=xmax, ymin=0,ymax=1.1*max(temp$JSD,na.rm=T)), alpha=0.2)+
-  geom_line(size=1)+
-  scale_color_manual(values=group.colors)+
-  theme_classic()+
-  scale_x_continuous(expand=c(0.01,0.01),breaks=c(331,seq(335,530,by=5)))+
-  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10))+
-  ylab("epistatic shift (JS divergence) versus Omicron BA.2")+
-  geom_text_repel(aes(label=ifelse(((JSD_min3bc > 0.1)),as.character(site),'')),size=3,color="gray40")+
-  facet_wrap(~bg_2,ncol=1)
-  
-
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/JSD_FLip_v_EG5_min3bc_faceted.pdf",sep=""),useDingbats=F))
-```
 
 ## Map divergence to pdb structure
 
@@ -440,8 +373,8 @@ for(s in unique(dt$target)){
 
 ```
 
-And vs BA2
-```{r map_JSD-v-BA2_to_pdb}
+And vs BA286
+```{r map_JSD-v-BA286_to_pdb}
 pdb_wh1 <- read.pdb(file=config$pdb_6m0j)
 
 #iterate through backgrounds, output a pdb comparing its divergence to BA2 (using min3bc)
@@ -450,13 +383,13 @@ for(s in unique(dt$target)){
   for(i in 1:nrow(pdb_wh1$atom)){
     if(pdb_wh1$atom$chain[i]=="E"){
       res <- pdb_wh1$atom$resno[i]
-      JSD <- diffs_bind[bg_1=="Omicron_BA2" & bg_2==s & site==res, JSD_min3bc]
+      JSD <- diffs_bind[bg_1=="Omicron_BA286" & bg_2==s & site==res, JSD_min3bc]
       if(length(JSD)>0){
         b[i] <- JSD
       }
     }
   }
-  write.pdb(pdb=pdb_wh1, file=paste(config$epistatic_shifts_dir,"/pdbs/",s,"_v_BA2_JSD-min3bc.pdb",sep=""), b=b)
+  write.pdb(pdb=pdb_wh1, file=paste(config$epistatic_shifts_dir,"/pdbs/",s,"_v_BA286_JSD-min3bc.pdb",sep=""), b=b)
 }
 
 ```
