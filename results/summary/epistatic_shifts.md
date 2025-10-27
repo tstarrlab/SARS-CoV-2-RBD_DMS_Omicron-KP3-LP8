@@ -296,18 +296,18 @@ Shifts in BA.2.86 relative to KP3
 
 ``` r
 par(mfrow=c(4,3))
-plot_scatter(site=398,"Omicron_KP3","Omicron_BA286")
-plot_scatter(site=406,"Omicron_KP3","Omicron_BA286")
 plot_scatter(site=420,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=449,"Omicron_KP3","Omicron_BA286")
 plot_scatter(site=453,"Omicron_KP3","Omicron_BA286")
 plot_scatter(site=455,"Omicron_KP3","Omicron_BA286")
 plot_scatter(site=456,"Omicron_KP3","Omicron_BA286")
-plot_scatter(site=467,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=463,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=466,"Omicron_KP3","Omicron_BA286")
 plot_scatter(site=487,"Omicron_KP3","Omicron_BA286")
-plot_scatter(site=491,"Omicron_KP3","Omicron_BA286")
-plot_scatter(site=492,"Omicron_KP3","Omicron_BA286")
 plot_scatter(site=493,"Omicron_KP3","Omicron_BA286")
-plot_scatter(site=495,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=498,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=501,"Omicron_KP3","Omicron_BA286")
+plot_scatter(site=505,"Omicron_KP3","Omicron_BA286")
 ```
 
 <img src="epistatic_shifts_files/figure-gfm/scatters_BA286_v_KP3-1.png" style="display: block; margin: auto;" />
@@ -318,18 +318,18 @@ invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/bg-scatters_BA286_v
 
 ``` r
 par(mfrow=c(4,3))
-plot_scatter(site=398,"Omicron_LP8","Omicron_BA286")
-plot_scatter(site=406,"Omicron_LP8","Omicron_BA286")
 plot_scatter(site=420,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=449,"Omicron_LP8","Omicron_BA286")
 plot_scatter(site=453,"Omicron_LP8","Omicron_BA286")
 plot_scatter(site=455,"Omicron_LP8","Omicron_BA286")
 plot_scatter(site=456,"Omicron_LP8","Omicron_BA286")
-plot_scatter(site=467,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=463,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=466,"Omicron_LP8","Omicron_BA286")
 plot_scatter(site=487,"Omicron_LP8","Omicron_BA286")
-plot_scatter(site=491,"Omicron_LP8","Omicron_BA286")
-plot_scatter(site=492,"Omicron_LP8","Omicron_BA286")
 plot_scatter(site=493,"Omicron_LP8","Omicron_BA286")
-plot_scatter(site=495,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=498,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=501,"Omicron_LP8","Omicron_BA286")
+plot_scatter(site=505,"Omicron_LP8","Omicron_BA286")
 ```
 
 <img src="epistatic_shifts_files/figure-gfm/scatters_BA286_v_LP8-1.png" style="display: block; margin: auto;" />
@@ -418,7 +418,7 @@ Include just WH1, KP3, and LP8
 
 ``` r
 ggplot(data=temp[bg_2 %in% c("Wuhan-Hu-1","Omicron_KP3", "Omicron_LP8")], aes(x=site, y=JSD_min3bc, color=target))+
-  geom_rect(data=label_df, aes(x=NULL, y=NULL, color=NULL,xmin=xmin, xmax=xmax, ymin=0,ymax=0.4), alpha=0.2)+
+  geom_rect(data=label_df, aes(x=NULL, y=NULL, color=NULL,xmin=xmin, xmax=xmax, ymin=0,ymax=0.5), alpha=0.2)+
   geom_line(size=1)+
   scale_color_manual(values=group.colors)+
   theme_classic()+
