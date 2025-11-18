@@ -91,7 +91,7 @@ rule make_summary:
             Here is the Markdown output of each Jupyter notebook in the
             workflow:
 
-            1. Get prior RBD DMS mutation-level binding and expression data from [prior DMS study](https://github.com/tstarrlab/SARS-CoV-2-RBD_DMS_Omicron-XBB-BQ), and SARS-CoV-1 ACE2-binding DMS data from [this repo](https://github.com/tstarrlab/SARSr-CoV-RBD_DMS).
+            1. Get prior RBD DMS mutation-level binding and expression data from [prior RBD DMS study](https://github.com/tstarrlab/SARS-CoV-2-RBD_DMS_Omicron-XBB-BQ), and SARS-CoV-1 ACE2-binding DMS data from [this repo](https://github.com/tstarrlab/SARSr-CoV-RBD_DMS).
             
             2. Process PacBio CCSs for 
             [Omicron KP3 (i.e. KP3)]({path(input.process_ccs_KP3)}), and 
@@ -199,6 +199,7 @@ rule collapse_scores:
         config['Titeseq_Kds_file'],
         config['expression_sortseq_file'],
         config['mut_bind_expr'],
+        config['mut_bind_full_spike'],
         config['gisaid_mutation_counts'],
     output:
         config['final_variant_scores_mut_file'],
@@ -283,6 +284,13 @@ rule get_SARSr_DMS:
     run:
         urllib.request.urlretrieve(config['SARSr_DMS_url'], output.file)
         
+rule get_mut_bind_full_spike_DMS:
+    """Download SARS-CoV-2 mutation ACE2-binding and serum-escape from URL."""
+    output:
+        file=config['mut_bind_full_spike']
+    run:
+        urllib.request.urlretrieve(config['mut_bind_full_spike_url'], output.file)
+
 rule get_mut_bind_expr:
     """Download SARS-CoV-2 mutation ACE2-binding and expression from URL."""
     output:

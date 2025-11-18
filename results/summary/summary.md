@@ -11,7 +11,7 @@ Here is the DAG of the computational workflow:
 Here is the Markdown output of each Jupyter notebook in the
 workflow:
 
-1. Get prior RBD DMS mutation-level binding and expression data from [prior DMS study](https://github.com/tstarrlab/SARS-CoV-2-RBD_DMS_Omicron-XBB-BQ), and SARS-CoV-1 ACE2-binding DMS data from [this repo](https://github.com/tstarrlab/SARSr-CoV-RBD_DMS).
+1. Get prior RBD DMS mutation-level binding and expression data from [prior RBD DMS study](https://github.com/tstarrlab/SARS-CoV-2-RBD_DMS_Omicron-XBB-BQ), and SARS-CoV-1 ACE2-binding DMS data from [this repo](https://github.com/tstarrlab/SARSr-CoV-RBD_DMS).
 
 2. Process PacBio CCSs for 
 [Omicron KP3 (i.e. KP3)](process_ccs_KP3.md), and 

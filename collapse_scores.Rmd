@@ -332,7 +332,7 @@ hist(dt_final[wildtype!=mutant & target %in% c("LP8"), n_bc_expr],col="gray50",m
 invisible(dev.print(pdf, paste(config$final_variant_scores_dir,"/histogram_n_bc_per_geno_pooled-libs.pdf",sep="")))
 ```
 
-## Correlations among backgrounds and to prior Wuhan-Hu-1 DMS data
+## Correlations among backgrounds, to prior Wuhan-Hu-1 DMS data, and to whole-spike KP3 data
 
 Merge with the prior VOC DMS experiments
 
@@ -355,6 +355,165 @@ rm(dt_voc)
 
 ```
 
+Compare prior spike DMS
+
+
+```{r combine_with_spike, fig.width=5.5,fig.height=4,fig.align="center", dpi=500,dev="png",echo=T}
+dt_spike <- data.table(read.csv(file=config$mut_bind_full_spike,stringsAsFactors = F))
+dt_spike$site <- as.numeric(dt_spike$site) #loses some NTD insert sites become NA
+dt_spike <- dt_spike[order(dt_spike$site)]
+
+dt_spike[,ACE2.binding.ysd:=as.numeric(NA)]
+for(i in 1:nrow(dt_spike)){
+  if(dt_spike[i,site] %in% dt_final[target=="Omicron_KP3",position]){
+    dt_spike[i,"ACE2.binding.ysd"] <- dt_final[target=="Omicron_KP3" & position==dt_spike[i,site] & mutant==dt_spike[i,mutant],delta_bind]
+  }
+}
+
+#15A residues from 8qsq ba286 ace2-bound structure
+RBD_proximal <- c(349,350,351,373,374,375,376,401,402,403,404,405,406,407,408,409,414,415,416,417,418,419,420,421,422,423,436,437,438,439,440,441,442,443,444,445,446,447,448,449,450,451,452,453,454,455,456,457,458,459,460,461,469,470,471,472,473,474,475,476,477,478,479,480,481,482,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508)
+
+#5A residues from 8qsq
+RBD_contact <- c(417, 449, 453, 455, 456, 473, 475, 476, 477, 486, 487, 489, 493, 496, 498, 500, 501, 502, 503, 505 )
+
+dt_spike[region=="RBD" & site %in% RBD_proximal,region:="RBD_proximal"]
+dt_spike[site %in% RBD_contact, region:="RBD_contact"]
+dt_spike[region=="RBD" & !(site %in% RBD_proximal),region:="RBD_distal"]
+
+dt_spike$region <- factor(dt_spike$region,levels=c("RBD_distal","RBD_proximal","RBD_contact"))
+
+dt_spike[,mutation:=paste0(wildtype,site,mutant)]
+
+#filter PV ACE2 binding scores below a PV entry cutoff based on convo with Jesse and Bernadeta
+dt_spike[spike.mediated.entry < -2, ACE2.binding := NA]
+
+r2_labels_sera <- dt_spike %>%
+  filter(region %in% c("RBD_distal", "RBD_proximal", "RBD_contact")) %>%
+  group_by(region) %>%
+  summarise(
+    r2 = summary(lm(adult.sera.escape ~ ACE2.binding))$r.squared,
+    x = min(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact"),ACE2.binding], na.rm = TRUE),
+    y = max(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact"),adult.sera.escape], na.rm = TRUE)
+  )
+
+r2_labels_ACE2 <- dt_spike %>%
+  filter(region %in% c("RBD_distal", "RBD_proximal", "RBD_contact")) %>%
+  group_by(region) %>%
+  summarise(
+    r2 = summary(lm(ACE2.binding ~ ACE2.binding.ysd))$r.squared,
+    y = max(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact"),ACE2.binding], na.rm = TRUE),  # adjust label position
+    x = min(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact"),ACE2.binding.ysd], na.rm = TRUE)
+  )
+```
+
+```{r plot_spike_sera-escape_v_ACE2-PV, fig.width=9,fig.height=3.5,fig.align="center", dpi=500,dev="png",echo=T}
+
+ggplot(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact")], 
+       aes(x = ACE2.binding, y = adult.sera.escape)) +
+  geom_point(alpha = 0.6, size = 2, shape = 16, color="gray40") +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+  geom_text(
+    data = r2_labels_sera,
+    aes(x = x, y = y, label = paste0("R² = ", round(r2, 3))),
+    inherit.aes = FALSE,
+    hjust = 0, vjust = 1,
+    size = 3
+  ) +
+  facet_wrap(~region) +
+  labs(
+    x = "spike PV DMS effect, ACE2 neutralization",
+    y = "spike PV DMS effect, sera escape"
+  ) +
+  theme_classic()
+
+invisible(dev.print(pdf, paste(config$final_variant_scores_dir,"/scatterplots_DMS-traits_spike-sera-escape_v_spike-ACE2-neut.pdf",sep="")))
+
+```
+
+```{r plot_spike_yeast-ACE2_v_ACE2-PV, fig.width=9,fig.height=3.5,fig.align="center", dpi=500,dev="png",echo=T}
+
+#mutations to label
+dt_labels <- rbind(
+  dt_spike[region == "RBD_proximal" & ACE2.binding.ysd > -0.75 & ACE2.binding > 1, .(ACE2.binding, ACE2.binding.ysd, mutation, region)],
+  dt_spike[region == "RBD_proximal" & ACE2.binding.ysd > -0.5 & ACE2.binding < -1, .(ACE2.binding, ACE2.binding.ysd, mutation, region)],
+  dt_spike[region == "RBD_contact" & (ACE2.binding - ACE2.binding.ysd > 0.5)  & ACE2.binding > -1, .(ACE2.binding, ACE2.binding.ysd, mutation, region)],
+  dt_spike[region == "RBD_contact" & (ACE2.binding - ACE2.binding.ysd < -0.5)  & ACE2.binding.ysd > -1, .(ACE2.binding, ACE2.binding.ysd, mutation, region)]
+)
+
+dt_labels$region <- factor(dt_labels$region,levels=c("RBD_distal","RBD_proximal","RBD_contact"))
+
+ggplot(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact") & !is.na(region)], 
+       aes(y = ACE2.binding, x = ACE2.binding.ysd)) +
+  geom_point(alpha = 0.4, size = 2, shape = 16, color="gray40") +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+  geom_text_repel(
+    data = dt_labels,
+    aes(x=ACE2.binding.ysd,y=ACE2.binding,label = mutation),
+    size = 2.5,
+    force=1.5,
+    min.segment.length=0,
+    color = "black",
+    max.overlaps=Inf
+  ) +
+  geom_text(
+    data = r2_labels_ACE2,
+    aes(x = x, y = y, label = paste0("R² = ", round(r2, 3))),
+    inherit.aes = FALSE,
+    hjust = 0, vjust = 1,
+    size = 3
+  ) +
+  facet_wrap(~region) +
+  labs(
+    y = "spike PV DMS effect, ACE2 neutralization",
+    x = "RBD DMS effect, ACE2 affinity"
+  ) +
+  theme_classic()
+
+
+invisible(dev.print(pdf, paste(config$final_variant_scores_dir,"/scatterplots_DMS-traits_RBD-ACE2-bind_v_spike-ACE2-neut.pdf",sep="")))
+
+#save residuals for mapping to structure more, below. Negative residual means does better in full-spike than expected from YSD (possible opening-biasing mutations), positive residual means does worse for ACE2 binding in full spike than in YSD (possible closed-biasing mutations)
+#dt_spike[region=="RBD_proximal" & !is.na(ACE2.binding) & !is.na(ACE2.binding.ysd), residual := resid(model)]
+```
+
+
+Compute sitewise metric for difference between ACE2 binding in PV and YSD of effects of mutations at each site
+
+To do this, let's infer a nonlinear function that captures nonlinearity between RBD and PV DMS effect based on the RBD_contact residue set, where this relationship is in its "purest" form. Then we take all RBD residues and compute mutational > sitewise deviation from this relationship. We summarize sitewise metrics as the mean residual (in case there's an open/close bias) and the average magnitude of residual (in case there are equal and opposite opening and closing effects of mutations)
+
+We do this only for mutations where ACE2 binding in the RBD YSD platform is > -2 -- this is where the relationship between spike and RBD ACE2 binding is more reliable, plus mutations below this threshold are not likely relevant to SARS2 evolution anyway
+
+```{r compare_full_spike_mean-per-site, fig.width=3,fig.height=3,fig.align="center", dpi=500,dev="png",echo=T}
+
+train <- dt_spike[region == "RBD_contact" & !is.na(ACE2.binding) & !is.na(ACE2.binding.ysd) & ACE2.binding > -3 & ACE2.binding.ysd > -2]
+
+fit_spline <- smooth.spline(y = train$ACE2.binding, x = train$ACE2.binding.ysd, spar = 1.25, all.knots=T)
+
+plot(train$ACE2.binding.ysd, train$ACE2.binding, pch=19, col="gray",
+     main="RBD_contact smoothing spline fit",
+     ylab="ACE2.binding", xlab="ACE2.binding.ysd")
+x_sorted <- sort(train$ACE2.binding.ysd)
+lines(x_sorted, predict(fit_spline, x = x_sorted)$y, col="red", lwd=2)
+
+#predict PV ACE2 from direct RBD ACE2
+dt_spike[, prediction := as.numeric(NA)]
+dt_spike[!is.na(ACE2.binding) & ACE2.binding.ysd > -2, prediction := predict(fit_spline, x = ACE2.binding.ysd)$y]
+
+#compute residual; negative residual implies worse binding in spike than would be predicted from RBD DMS (i.e. biasing closed?), positive residual implies better bidnign in spike based on RBD (i.e. biased opening?)
+dt_spike[, residual := ACE2.binding - prediction]
+
+#compute mean residual per site
+dt_spike_sites <- copy(dt_spike[wildtype!=mutant & region %in% c("RBD_contact","RBD_proximal","RBD_distal")])
+
+dt_spike_sites[,mean_residual:=mean(residual,na.rm=T),by=.(site)]
+dt_spike_sites[,mean_abs_residual:=mean(abs(residual),na.rm=T),by=.(site)]
+dt_spike_sites[,n_residual:=sum(!is.na(residual)),by=.(site)]
+
+dt_spike_sites <- unique(dt_spike_sites[,.(site,wildtype,region,mean_residual,mean_abs_residual,n_residual)])
+
+```
+
+
 ## Heatmaps!
 
 Order factor variables for plotting
@@ -366,7 +525,7 @@ dt_final$target <- factor(dt_final$target,levels=c("Wuhan-Hu-1","Eta","Alpha","B
 dt_final$mutant <- factor(dt_final$mutant, levels=c("-","C","P","G","V","M","L","I","A","F","W","Y","T","S","N","Q","E","D","H","K","R"))
 #add character vector indicating wildtype to use as plotting symbols for wt
 dt_final[,wildtype_indicator := ""]
-dt_final[as.character(mutant)==as.character(wildtype),wildtype_indicator := "x"]
+dt_final[as.character(mutant)==as.character(wildtype),wildtype_indicator := as.character(wildtype)]
 
 
 #make temp long-form data frame
@@ -398,7 +557,7 @@ p1 <- ggplot(temp[measurement=="bind",],aes(position,mutant))+geom_tile(aes(fill
   coord_equal()+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10),axis.text.y=element_text(face="bold",size=10))+
   facet_wrap(~target,ncol=1)+
   guides(y.sec=guide_axis_label_trans())+
-  geom_text(aes(label=wildtype_indicator),size=2,color="gray10")+
+  geom_text(aes(label=wildtype_indicator),size=1.5,fontface="bold",color="gray10")+
   theme(strip.text.x = element_text(size = 18))
 
 p1
@@ -416,7 +575,7 @@ p1 <- ggplot(temp[measurement=="delta_bind",],aes(position,mutant))+geom_tile(ae
   coord_equal()+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10),axis.text.y=element_text(face="bold",size=10))+
   facet_wrap(~target,ncol=1)+
   guides(y.sec=guide_axis_label_trans())+
-  geom_text(aes(label=wildtype_indicator),size=2,color="gray10")+
+  geom_text(aes(label=wildtype_indicator),size=1.5,fontface="bold",color="gray10")+
   theme(strip.text.x = element_text(size = 18))
 
 p1
@@ -433,7 +592,7 @@ p1 <- ggplot(temp[measurement=="delta_bind" & target %in% c("Omicron_BA286", "Om
   coord_equal()+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10),axis.text.y=element_text(face="bold",size=10))+
   facet_wrap(~target,ncol=1)+
   guides(y.sec=guide_axis_label_trans())+
-  geom_text(aes(label=wildtype_indicator),size=2,color="gray10")+
+  geom_text(aes(label=wildtype_indicator),size=1.5,fontface="bold",color="gray10")+
   theme(strip.text.x = element_text(size = 18))
 
 p1
@@ -451,7 +610,7 @@ p1 <- ggplot(temp[measurement=="expr",],aes(position,mutant))+geom_tile(aes(fill
   coord_equal()+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10),axis.text.y=element_text(face="bold",size=10))+
   facet_wrap(~target,ncol=1)+
   guides(y.sec=guide_axis_label_trans())+
-  geom_text(aes(label=wildtype_indicator),size=2,color="gray10")+
+  geom_text(aes(label=wildtype_indicator),size=1.5,fontface="bold",color="gray10")+
   theme(strip.text.x = element_text(size = 18))
 
 p1
@@ -468,7 +627,7 @@ p1 <- ggplot(temp[measurement=="delta_expr",],aes(position,mutant))+geom_tile(ae
   coord_equal()+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10),axis.text.y=element_text(face="bold",size=10))+
   facet_wrap(~target,ncol=1)+
   guides(y.sec=guide_axis_label_trans())+
-  geom_text(aes(label=wildtype_indicator),size=2,color="gray10")+
+  geom_text(aes(label=wildtype_indicator),size=1.5,fontface="bold",color="gray10")+
   theme(strip.text.x = element_text(size = 18))
 
 p1
@@ -484,7 +643,7 @@ p1 <- ggplot(temp[measurement=="delta_expr" & target %in% c("Omicron_BA286","Omi
   coord_equal()+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.6,face="bold",size=10),axis.text.y=element_text(face="bold",size=10))+
   facet_wrap(~target,ncol=1)+
   guides(y.sec=guide_axis_label_trans())+
-  geom_text(aes(label=wildtype_indicator),size=2,color="gray10")+
+  geom_text(aes(label=wildtype_indicator),size=1.5,fontface="bold",color="gray10")+
   theme(strip.text.x = element_text(size = 18))
 
 p1
@@ -510,6 +669,146 @@ x <- dt_final[target=="Omicron_LP8",delta_expr]; y <- dt_final[target=="Omicron_
 
 invisible(dev.print(pdf, paste(config$final_variant_scores_dir,"/scatterplots_bind-v-expr.pdf",sep=""),useDingbats=F))
 ```
+
+## Map DMS scores to structure
+
+```{r map_to_pdb_KP3_LP8}
+#get summary stats into RBD sites table
+sites <- read.csv(file=config$RBD_sites,stringsAsFactors = F)
+
+#remove the ba286 del
+sites <- sites[sites$site!=483,]
+
+sites$mean_bind_KP3 <- NA
+sites$max_bind_KP3 <- NA
+sites$del_bind_KP3 <- NA
+sites$mean_expr_KP3 <- NA
+sites$max_expr_KP3 <- NA
+sites$del_expr_KP3 <- NA
+
+sites$mean_bind_LP8 <- NA
+sites$max_bind_LP8 <- NA
+sites$del_bind_LP8 <- NA
+sites$mean_expr_LP8 <- NA
+sites$max_expr_LP8 <- NA
+sites$del_expr_LP8 <- NA
+
+sites$mean_residual_spike_rbd <- NA
+sites$abs_residual_spike_rbd <- NA
+
+for(i in 1:nrow(sites)){
+  if(!is.na(sites[i,"site_8qsq"])){
+    sites$mean_bind_KP3[i] <- mean(dt_final[position==sites[i,"site"] & target=="Omicron_KP3" & wildtype != mutant & mutant!= "-" & n_bc_bind>1,delta_bind],na.rm=T)
+    sites$max_bind_KP3[i] <- max(dt_final[position==sites[i,"site"] & target=="Omicron_KP3" & wildtype != mutant & mutant!= "-" & n_bc_bind>1,delta_bind],na.rm=T)
+    sites$del_bind_KP3[i] <- dt_final[position==sites[i,"site"] & target=="Omicron_KP3" & mutant== "-",delta_bind]
+    
+    sites$mean_expr_KP3[i] <- mean(dt_final[position==sites[i,"site"] & target=="Omicron_KP3" & wildtype != mutant & mutant!= "-" & n_bc_expr>1,delta_expr],na.rm=T)
+    sites$max_expr_KP3[i] <- max(dt_final[position==sites[i,"site"] & target=="Omicron_KP3" & wildtype != mutant & mutant!= "-" & n_bc_expr>1,delta_expr],na.rm=T)
+    sites$del_expr_KP3[i] <- dt_final[position==sites[i,"site"] & target=="Omicron_KP3" & mutant== "-",delta_expr]
+    
+    sites$mean_bind_LP8[i] <- mean(dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & wildtype != mutant & mutant!= "-" & n_bc_bind>1,delta_bind],na.rm=T)
+    sites$max_bind_LP8[i] <- max(dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & wildtype != mutant & mutant!= "-" & n_bc_bind>1,delta_bind],na.rm=T)
+    sites$del_bind_LP8[i] <- dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & mutant== "-",delta_bind]
+    
+    sites$mean_expr_LP8[i] <- mean(dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & wildtype != mutant & mutant!= "-" & n_bc_expr>1,delta_expr],na.rm=T)
+    sites$max_expr_LP8[i] <- max(dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & wildtype != mutant & mutant!= "-" & n_bc_expr>1,delta_expr],na.rm=T)
+    sites$del_expr_LP8[i] <- dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & mutant== "-",delta_expr]
+    if(sites[i,"site"] %in% dt_spike_sites$site){
+      sites$mean_residual_spike_rbd[i] <- dt_spike_sites[site==sites[i,"site"],mean_residual]
+      sites$mean_residual_spike_rbd[i] <- dt_spike_sites[site==sites[i,"site"],mean_abs_residual]
+    }
+  }
+}
+
+pdb <- read.pdb(file=config$pdb_8qsq)
+
+#PV/YSD residual maping
+b_resid_bind <- rep(0, length(pdb$atom$b))
+b_abs_resid_bind <- rep(0, length(pdb$atom$b))
+
+for(i in 1:nrow(pdb$atom)){
+  res <- pdb$atom$resno[i]
+  if(pdb$atom$chain[i] %in% c("A") & res %in% sites$site_8qsq){
+    b_resid_bind[i] <- sites[sites$site_8qsq==res,"mean_residual_spike_rbd"]
+    b_abs_resid_bind[i] <- sites[sites$site_8qsq==res,"abs_residual_spike_rbd"]
+  }
+}
+
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_mean-residual_pv-v-ysd.pdb",sep=""), b=b_resid_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_mean-abs-residual_pv-v-ysd.pdb",sep=""), b=b_abs_resid_bind)
+
+#KP3 mapping
+b_mean_bind <- rep(0, length(pdb$atom$b))
+b_max_bind <- rep(0, length(pdb$atom$b))
+b_del_bind <- rep(0, length(pdb$atom$b))
+
+b_mean_expr <- rep(0, length(pdb$atom$b))
+b_max_expr <- rep(0, length(pdb$atom$b))
+b_del_expr <- rep(0, length(pdb$atom$b))
+
+for(i in 1:nrow(pdb$atom)){
+  res <- pdb$atom$resno[i]
+  if(pdb$atom$chain[i] %in% c("A") & res %in% sites$site_8qsq){
+    b_mean_bind[i] <- sites[sites$site_8qsq==res,"mean_bind_KP3"]
+    b_max_bind[i] <- sites[sites$site_8qsq==res,"max_bind_KP3"]
+    b_del_bind[i] <- sites[sites$site_8qsq==res,"del_bind_KP3"]
+    b_mean_expr[i] <- sites[sites$site_8qsq==res,"mean_expr_KP3"]
+    b_max_expr[i] <- sites[sites$site_8qsq==res,"max_expr_KP3"]
+    b_del_expr[i] <- sites[sites$site_8qsq==res,"del_expr_KP3"]
+  }
+}
+
+#replace NaN with -10 for missing in the dels
+b_del_bind[is.na(b_del_bind)] <- -10
+b_del_expr[is.na(b_del_expr)] <- -10
+
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_mean_KP3.pdb",sep=""), b=b_mean_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_max_KP3.pdb",sep=""), b=b_max_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_del_KP3.pdb",sep=""), b=b_del_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/expr_mean_KP3.pdb",sep=""), b=b_mean_expr)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/expr_max_KP3.pdb",sep=""), b=b_max_expr)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/expr_del_KP3.pdb",sep=""), b=b_del_expr)
+
+#repeat LP8
+b_mean_bind <- rep(0, length(pdb$atom$b))
+b_max_bind <- rep(0, length(pdb$atom$b))
+b_del_bind <- rep(0, length(pdb$atom$b))
+
+b_mean_expr <- rep(0, length(pdb$atom$b))
+b_max_expr <- rep(0, length(pdb$atom$b))
+b_del_expr <- rep(0, length(pdb$atom$b))
+
+for(i in 1:nrow(pdb$atom)){
+  res <- pdb$atom$resno[i]
+  if(pdb$atom$chain[i] %in% c("A") & res %in% sites$site_8qsq){
+    b_mean_bind[i] <- sites[sites$site_8qsq==res,"mean_bind_LP8"]
+    b_max_bind[i] <- sites[sites$site_8qsq==res,"max_bind_LP8"]
+    b_del_bind[i] <- sites[sites$site_8qsq==res,"del_bind_LP8"]
+    b_mean_expr[i] <- sites[sites$site_8qsq==res,"mean_expr_LP8"]
+    b_max_expr[i] <- sites[sites$site_8qsq==res,"max_expr_LP8"]
+    b_del_expr[i] <- sites[sites$site_8qsq==res,"del_expr_LP8"]
+  }
+}
+
+#replace NaN with -10 for missing in the dels
+b_del_bind[is.na(b_del_bind)] <- -10
+b_del_expr[is.na(b_del_expr)] <- -10
+
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_mean_LP8.pdb",sep=""), b=b_mean_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_max_LP8.pdb",sep=""), b=b_max_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_del_LP8.pdb",sep=""), b=b_del_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/expr_mean_LP8.pdb",sep=""), b=b_mean_expr)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/expr_max_LP8.pdb",sep=""), b=b_max_expr)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/expr_del_LP8.pdb",sep=""), b=b_del_expr)
+
+#output contact residues from this ba286 structure (structure numbering, have to convert back to WH1)
+binding.site(pdb,
+             a.inds=atom.select(pdb,chain=c("A")),
+             b.inds=atom.select(pdb,chain=c("B")),
+             cutoff=5,hydrogens=F)$resnames
+
+```
+
 
 Save output files.
 

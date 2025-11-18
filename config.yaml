@@ -24,9 +24,11 @@ site_number_offset: 330  # add this to sequential sites to get RBD numbering
 
 # pdbs for mapping, analysis
 pdb_6m0j: data/6m0j.pdb #WH1 bound to ACE2 xtal
+pdb_8qsq: data/8qsq.pdb #BA.2.86 bound to ACE2; cryoEM local refinement; note, uses BA286 numbering
 
 # URLs from which we download binding & expression of mutants & variants and surveillance count data
 mut_bind_expr_url: https://media.githubusercontent.com/media/tstarrlab/SARS-CoV-2-RBD_DMS_Omicron-EG5-FLip-BA286/refs/heads/main/results/final_variant_scores/final_variant_scores.csv
+mut_bind_full_spike_url: https://raw.githubusercontent.com/dms-vep/SARS-CoV-2_KP.3.1.1_spike_DMS/refs/heads/main/results/summaries/antibody_escape.csv
 mut_antibody_escape_url: https://media.githubusercontent.com/media/jbloomlab/SARS2_RBD_Ab_escape_maps/main/processed_data/escape_data.csv
 SARSr_DMS_url: https://raw.githubusercontent.com/tstarrlab/SARSr-CoV-RBD_DMS/main/results/final_variant_scores/final_variant_scores_lib40_41.csv
 
@@ -34,6 +36,7 @@ SARSr_DMS_url: https://raw.githubusercontent.com/tstarrlab/SARSr-CoV-RBD_DMS/mai
 # output directories / files
 summary_dir: results/summary
 mut_bind_expr: results/prior_DMS_data/mutant_ACE2binding_expression.csv
+mut_bind_full_spike: results/prior_DMS_data/mutant_ACE2binding_serumescape_full-spike.csv
 mut_antibody_escape: results/prior_DMS_data/mutant_antibody-escape.csv
 mut_clade_occurrence: results/prior_DMS_data/mutant_clade_occurrence.csv
 SARSr_DMS: results/prior_DMS_data/SARSr-CoV_DMS.csv
