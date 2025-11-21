@@ -25,6 +25,7 @@ site_number_offset: 330  # add this to sequential sites to get RBD numbering
 # pdbs for mapping, analysis
 pdb_6m0j: data/6m0j.pdb #WH1 bound to ACE2 xtal
 pdb_8qsq: data/8qsq.pdb #BA.2.86 bound to ACE2; cryoEM local refinement; note, uses BA286 numbering
+pdb_9elh: data/9elh.pdb #KP.3 spike one RBD up
 
 # URLs from which we download binding & expression of mutants & variants and surveillance count data
 mut_bind_expr_url: https://media.githubusercontent.com/media/tstarrlab/SARS-CoV-2-RBD_DMS_Omicron-EG5-FLip-BA286/refs/heads/main/results/final_variant_scores/final_variant_scores.csv

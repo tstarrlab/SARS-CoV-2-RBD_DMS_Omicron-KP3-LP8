@@ -581,9 +581,6 @@ ggplot(dt_spike[region %in% c("RBD_distal", "RBD_proximal", "RBD_contact") & !is
 
 ``` r
 invisible(dev.print(pdf, paste(config$final_variant_scores_dir,"/scatterplots_DMS-traits_RBD-ACE2-bind_v_spike-ACE2-neut.pdf",sep="")))
-
-#save residuals for mapping to structure more, below. Negative residual means does better in full-spike than expected from YSD (possible opening-biasing mutations), positive residual means does worse for ACE2 binding in full spike than in YSD (possible closed-biasing mutations)
-#dt_spike[region=="RBD_proximal" & !is.na(ACE2.binding) & !is.na(ACE2.binding.ysd), residual := resid(model)]
 ```
 
 Compute sitewise metric for difference between ACE2 binding in PV and
@@ -827,6 +824,8 @@ invisible(dev.print(pdf, paste(config$final_variant_scores_dir,"/scatterplots_bi
 
 ## Map DMS scores to structure
 
+ACE2-bound RBD:
+
 ``` r
 #get summary stats into RBD sites table
 sites <- read.csv(file=config$RBD_sites,stringsAsFactors = F)
@@ -848,8 +847,8 @@ sites$mean_expr_LP8 <- NA
 sites$max_expr_LP8 <- NA
 sites$del_expr_LP8 <- NA
 
-sites$mean_residual_spike_rbd <- NA
-sites$abs_residual_spike_rbd <- NA
+sites$mean_residual_spike_rbd <- as.numeric(NA)
+sites$abs_residual_spike_rbd <- as.numeric(NA)
 
 for(i in 1:nrow(sites)){
   if(!is.na(sites[i,"site_8qsq"])){
@@ -870,7 +869,7 @@ for(i in 1:nrow(sites)){
     sites$del_expr_LP8[i] <- dt_final[position==sites[i,"site"] & target=="Omicron_LP8" & mutant== "-",delta_expr]
     if(sites[i,"site"] %in% dt_spike_sites$site){
       sites$mean_residual_spike_rbd[i] <- dt_spike_sites[site==sites[i,"site"],mean_residual]
-      sites$mean_residual_spike_rbd[i] <- dt_spike_sites[site==sites[i,"site"],mean_abs_residual]
+      sites$abs_residual_spike_rbd[i] <- dt_spike_sites[site==sites[i,"site"],mean_abs_residual]
     }
   }
 }
@@ -884,13 +883,17 @@ b_abs_resid_bind <- rep(0, length(pdb$atom$b))
 for(i in 1:nrow(pdb$atom)){
   res <- pdb$atom$resno[i]
   if(pdb$atom$chain[i] %in% c("A") & res %in% sites$site_8qsq){
-    b_resid_bind[i] <- sites[sites$site_8qsq==res,"mean_residual_spike_rbd"]
-    b_abs_resid_bind[i] <- sites[sites$site_8qsq==res,"abs_residual_spike_rbd"]
+    if(!is.na(sites[sites$site_8qsq==res,"mean_residual_spike_rbd"])){
+      b_resid_bind[i] <- sites[sites$site_8qsq==res,"mean_residual_spike_rbd"]
+    }
+    if(!is.na(sites[sites$site_8qsq==res,"abs_residual_spike_rbd"])){
+      b_abs_resid_bind[i] <- sites[sites$site_8qsq==res,"abs_residual_spike_rbd"]
+    }
   }
 }
 
-write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_mean-residual_pv-v-ysd.pdb",sep=""), b=b_resid_bind)
-write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/bind_mean-abs-residual_pv-v-ysd.pdb",sep=""), b=b_abs_resid_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/rbd_bind_mean-residual_pv-v-ysd.pdb",sep=""), b=b_resid_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/rbd_bind_mean-abs-residual_pv-v-ysd.pdb",sep=""), b=b_abs_resid_bind)
 
 #KP3 mapping
 b_mean_bind <- rep(0, length(pdb$atom$b))
@@ -967,6 +970,32 @@ binding.site(pdb,
     ##  [6] "TYR 470 (A)" "ALA 472 (A)" "GLY 473 (A)" "ASN 474 (A)" "PRO 482 (A)"
     ## [11] "ASN 483 (A)" "TYR 485 (A)" "GLN 489 (A)" "GLY 492 (A)" "ARG 494 (A)"
     ## [16] "THR 496 (A)" "TYR 497 (A)" "GLY 498 (A)" "VAL 499 (A)" "HIS 501 (A)"
+
+Full spike:
+
+``` r
+#get summary stats into RBD sites table
+pdb <- read.pdb(config$pdb_9elh) #full kp.3 spike
+
+#PV/YSD residual maping
+b_resid_bind <- rep(0, length(pdb$atom$b))
+b_abs_resid_bind <- rep(0, length(pdb$atom$b))
+
+for(i in 1:nrow(pdb$atom)){
+  res <- pdb$atom$resno[i]
+  if(pdb$atom$chain[i] %in% c("A", "B", "C") & res %in% sites$site){
+    if(!is.na(sites[sites$site==res,"mean_residual_spike_rbd"])){
+      b_resid_bind[i] <- sites[sites$site==res,"mean_residual_spike_rbd"]
+    }
+    if(!is.na(sites[sites$site==res,"abs_residual_spike_rbd"])){
+      b_abs_resid_bind[i] <- sites[sites$site==res,"abs_residual_spike_rbd"]
+    }
+  }
+}
+
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/spike_bind_mean-residual_pv-v-ysd.pdb",sep=""), b=b_resid_bind)
+write.pdb(pdb=pdb, file=paste(config$final_variant_scores_dir,"/pdbs/spike_bind_mean-abs-residual_pv-v-ysd.pdb",sep=""), b=b_abs_resid_bind)
+```
 
 Save output files.
 
