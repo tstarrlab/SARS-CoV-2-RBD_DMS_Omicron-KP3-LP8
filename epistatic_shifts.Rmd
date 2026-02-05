@@ -219,6 +219,7 @@ plot_scatter <- function(site, bg1, bg2, JSD=F, JSD_min3bc=T, JSD_min5bc=F,n_bc_
   plot(x,y, xlim=if(phenotype=="bind"){c(4.5,13)}else{c(5.5,11)},ylim=if(phenotype=="bind"){c(4.5,13)}else{c(5.5,11)},pch=chars,xlab=paste(bg1,phenotype),ylab=paste(bg2,phenotype),col=cols,main=paste("site",site))
   abline(v=x_ref,lty=2,col="red")
   abline(h=y_ref,lty=2,col="red")
+  abline(a=y_ref - x_ref, b=1, lty=2, col="gray50")
   if(JSD==T){
     val <- JS(x,y)
     legend("topleft",bty="n",cex=1,legend=paste("JSD:",format(val,digits=3)))
