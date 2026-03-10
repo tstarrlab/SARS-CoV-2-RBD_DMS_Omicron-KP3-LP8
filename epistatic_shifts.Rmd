@@ -504,112 +504,48 @@ invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/MDS-scatters.pdf",s
 
 ```
 
-Remove FLip and EG.5 which have problematic values
-```{r derive_dissimilarity_core, fig.width=12, fig.height=8, fig.align="center", dpi=300,dev="png"}
-#For each pair, have sitewise epistatic shift metrics. Compute (mean, root-mean-squared, L2 norm, L3 of JSD for each RBD pair across all sites, and use that as the dissimilarity?
+## Distribution of epistatic shift over time
 
-#if wanting to remove the WH1 dimer data (used as control to make sure selecting an MDS condition where WH1 monomer and dimer look similar since SARS1 data is dimer)
-diffs_bind <- diffs_bind[bg_1 != "SARS-CoV-2_WH1" & bg_2 != "SARS-CoV-2_WH1"]
+Want to look, per site, at the average dynamic versus maximal dynamic in epistatic shift between consecutive variant backgrounds
 
-#remove bad bgs
-diffs_bind <- diffs_bind[bg_1 != "Omicron_EG5" & bg_2 != "Omicron_EG5"]
-diffs_bind <- diffs_bind[bg_1 != "Omicron_FLip" & bg_2 != "SARS-CoV-2_FLip"]
+```{r sitewise_dynamics, fig.width=6, fig.height=5, fig.align="center", dpi=300,dev="png"}
+dt_dynamics <- data.table(site=c(452,455,456,493,498,501),
+                          t1=as.numeric(NA),t2=as.numeric(NA),t3=as.numeric(NA),t4=as.numeric(NA),
+                          t5=as.numeric(NA),t6=as.numeric(NA),t7=as.numeric(NA),t8=as.numeric(NA),
+                          t9=as.numeric(NA),t10=as.numeric(NA),t11=as.numeric(NA),t12=as.numeric(NA),
+                          t13=as.numeric(NA))
 
-#make matrix to host these dissimilarities
-dissim <- matrix(0,nrow=length(unique(diffs_bind$bg_1)), ncol=length(unique(diffs_bind$bg_1)))
-rownames(dissim) <- unique(diffs_bind$bg_1)
-colnames(dissim) <- unique(diffs_bind$bg_1)
 
-dissim_mean <- dissim
-dissim_RMS <- dissim
-dissim_L2 <- dissim
-dissim_L3 <- dissim
-dissim_L4 <- dissim
-
-for(row in rownames(dissim)){
-  for(col in colnames(dissim)){
-    if(row != col){
-      data <- diffs_bind[bg_1==row & bg_2==col]
-      dissim_mean[row,col] <- mean(data$JSD_min3bc,na.rm=T)
-      dissim_RMS[row,col] <- sqrt(mean(data$JSD_min3bc^2,na.rm=T))
-      dissim_L2[row,col] <- sum(data$JSD_min3bc^2)^(1/2)
-      dissim_L3[row,col] <- sum(data$JSD_min3bc^3)^(1/3)
-      dissim_L4[row,col] <- sum(data$JSD_min3bc^4)^(1/4)
-    }
-  }
+for(i in 1:nrow(dt_dynamics)){
+  dt_dynamics[i,"t1"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Wuhan-Hu-1" & bg_2=="Eta",JSD_min3bc]
+  dt_dynamics[i,"t2"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Eta" & bg_2=="Alpha",JSD_min3bc]
+  dt_dynamics[i,"t3"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Alpha" & bg_2=="Beta",JSD_min3bc]
+  dt_dynamics[i,"t4"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Beta" & bg_2=="Delta",JSD_min3bc]
+  dt_dynamics[i,"t5"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Delta" & bg_2=="Omicron_BA1",JSD_min3bc]
+  dt_dynamics[i,"t6"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_BA1" & bg_2=="Omicron_BA2",JSD_min3bc]
+  dt_dynamics[i,"t7"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_BA2" & bg_2=="Omicron_BQ11",JSD_min3bc]
+  dt_dynamics[i,"t8"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_BQ11" & bg_2=="Omicron_XBB15",JSD_min3bc]
+  dt_dynamics[i,"t9"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_XBB15" & bg_2=="Omicron_EG5",JSD_min3bc]
+  dt_dynamics[i,"t10"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_EG5" & bg_2=="Omicron_FLip",JSD_min3bc]
+  dt_dynamics[i,"t11"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_FLip" & bg_2=="Omicron_BA286",JSD_min3bc]
+  dt_dynamics[i,"t12"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_BA286" & bg_2=="Omicron_KP3",JSD_min3bc]
+  dt_dynamics[i,"t13"] <- diffs_bind[site==dt_dynamics[i,site] & bg_1=="Omicron_KP3" & bg_2=="Omicron_LP8",JSD_min3bc]
 }
 
-mds_mean <- as.data.frame(cmdscale(dissim_mean))
-mds_RMS <- as.data.frame(cmdscale(dissim_RMS))
-mds_L2 <- as.data.frame(cmdscale(dissim_L2))
-mds_L3 <- as.data.frame(cmdscale(dissim_L3))
-mds_L4 <- as.data.frame(cmdscale(dissim_L4))
+dt_dynamics[,mean := mean(c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)),by=site]
+dt_dynamics[,median := median(c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)),by=site] 
+dt_dynamics[,sd := sd(c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)),by=site] 
+dt_dynamics[,max := max(c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)),by=site] 
+dt_dynamics[,sum := sum(c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)),by=site] 
 
-colnames(mds_mean) <- c("Dim.1","Dim.2")
-colnames(mds_RMS) <- c("Dim.1","Dim.2")
-colnames(mds_L2) <- c("Dim.1","Dim.2")
-colnames(mds_L3) <- c("Dim.1","Dim.2")
-colnames(mds_L4) <- c("Dim.1","Dim.2")
+par(mfrow=c(3,2))
+plot(dt_dynamics[site==455,c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)],ylab="",xlab="",ylim=c(0,0.505),pch=16)
+plot(dt_dynamics[site==452,c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)],ylab="",xlab="",ylim=c(0,0.505),pch=16)
+plot(dt_dynamics[site==456,c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)],ylab="",xlab="",ylim=c(0,0.505),pch=16)
+plot(dt_dynamics[site==498,c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)],ylab="",xlab="",ylim=c(0,0.505),pch=16)
+plot(dt_dynamics[site==493,c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)],ylab="",xlab="",ylim=c(0,0.505),pch=16)
+plot(dt_dynamics[site==501,c(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)],ylab="",xlab="",ylim=c(0,0.505),pch=16)
 
-mds_mean$label <- rownames(mds_mean)
-mds_RMS$label <- rownames(mds_RMS)
-mds_L2$label <- rownames(mds_L2)
-mds_L3$label <- rownames(mds_L3)
-mds_L4$label <- rownames(mds_L4)
-
-p_mean <- ggplot(data=mds_mean, aes(x = Dim.1, y = Dim.2))+
-  geom_point(size=5)+
-  geom_text_repel(aes(label=label))+
-  xlab("")+
-  ylab("")+
-  theme_classic()+
-  ggtitle("mean")+
-  theme_void()+
-  theme(panel.border=element_rect(color="black",fill=NA,linewidth=1))
-
-p_RMS <- ggplot(data=mds_RMS, aes(x = Dim.2, y = Dim.1))+
-  geom_point(size=5)+
-  geom_text_repel(aes(label=label))+
-  xlab("")+
-  ylab("")+
-  theme_classic()+
-  ggtitle("RMS")+
-  theme_void()+
-  theme(panel.border=element_rect(color="black",fill=NA,linewidth=1))
-  
-
-p_L2 <- ggplot(data=mds_L2, aes(x = Dim.2, y = Dim.1))+
-  geom_point(size=5)+
-  geom_text_repel(aes(label=label))+
-  xlab("")+
-  ylab("")+
-  theme_classic()+
-  ggtitle("L2")+
-  theme_void()+
-  theme(panel.border=element_rect(color="black",fill=NA,linewidth=1))
-
-p_L3 <- ggplot(data=mds_L3, aes(x = Dim.2, y = Dim.1))+
-  geom_point(size=5)+
-  geom_text_repel(aes(label=label))+
-  xlab("")+
-  ylab("")+
-  theme_classic()+
-  ggtitle("L3")+
-  theme_void()+
-  theme(panel.border=element_rect(color="black",fill=NA,linewidth=1))
-
-p_L4 <- ggplot(data=mds_L4, aes(x = Dim.2, y = Dim.1))+
-  geom_point(size=5)+
-  geom_text_repel(aes(label=label))+
-  xlab("")+
-  ylab("")+
-  ggtitle("L4")+
-  theme_void()+
-  theme(panel.border=element_rect(color="black",fill=NA,linewidth=1))
-
-grid.arrange(p_mean,p_RMS,nullGrob(),p_L2,p_L3,p_L4,nrow=2)
-
-invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/MDS-scatters.pdf",sep=""),useDingbats=F))
-
+invisible(dev.print(pdf, paste(config$epistatic_shifts_dir,"/epistatic-shift-dynamics.pdf",sep=""),useDingbats=F))
 ```
 
